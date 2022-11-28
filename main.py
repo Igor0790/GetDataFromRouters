@@ -5,13 +5,20 @@ import socket
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+import ipaddress
 
 import paramiko
 import yaml
 
+def list_in_list(list_subnet: list) -> list:
+    ip_list = []
+    for i_subnet in list_subnet:
+        prefix = ipaddress.ip_network(i_subnet)
+        ip_list.append('ping' + ' ' + f'{prefix.hosts().__next__()}')
+    return ip_list
 
 def write_data_command_in_file(data, ip: list) -> None:
-
+    global command
     """
     Функция, сохраняющая полученыые данные в результате опроса по файлам json
 
@@ -21,20 +28,23 @@ def write_data_command_in_file(data, ip: list) -> None:
     """
     path = os.path.join(os.getcwd(), 'data', f'data_{ip}')
 
+
     if not os.path.isdir(path):
         os.mkdir(path)
 
-    with open(f'{path}/data.json', mode='a+', encoding='utf-8') as file:
-        json.dump(data, file, indent=4)
-
-with open('user_data.yaml') as f:
-    data_from_file = yaml.safe_load(f)
-    ip_list = data_from_file['ip_list'].split(',')
-    command = data_from_file['command'].split(',')
-    username = data_from_file['username']
-    password = data_from_file['password']
+    print('DATA:', data)
 
 
+    with open(f'{path}/data.txt', mode='a+') as file:
+        for key, value in data.items():
+            print(value)
+            if '!' in ''.join(value):
+                file.write(f'{key} : !!!!!!!!!!!!!!!!!')
+            else:
+                file.write(f'{key} : ....')
+            file.write('\n')
+
+        #json.dump(result_dict, file, indent=4)
 
 
 logging.getLogger('paramiko').setLevel(logging.INFO)
@@ -103,10 +113,21 @@ def send_show_command(
 
 if __name__ == '__main__':
 
-    start_time = time.time()
+    with open('user_data.yaml') as f:
+        data_from_file = yaml.safe_load(f)
+        ip_list = data_from_file['ip_list'].split(',')
+        username = data_from_file['username']
+        password = data_from_file['password']
 
+    with open('in_data.yaml') as f:
+        ip_list_network = yaml.safe_load(f)
+
+
+    start_time = time.time()
+    command = list_in_list(ip_list_network.split())[:2]
     with ThreadPoolExecutor(max_workers=5) as executor:
         for ip, data in zip(ip_list, executor.map(send_show_command, ip_list)):
+
             write_data_command_in_file(data, ip)
 
     end_time = time.time()
