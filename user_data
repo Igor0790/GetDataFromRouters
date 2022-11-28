@@ -1,0 +1,7 @@
+username: 'login'
+
+password: 'password'
+
+ip_list: 'IP ADDRESS (or some IP ADDRESSES)'
+
+command: 'command (or some commands)'
